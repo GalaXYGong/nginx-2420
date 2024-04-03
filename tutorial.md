@@ -24,7 +24,7 @@ We can run a test of Nginx, in the bash, using this command
 nginx
 ```
 we can set see the page for now
-![image](Pasted image 20240403085058.png)
+![image]("./Pasted image 20240403085058.png")
 It is running on the default port 80
 
 ## Enable nginx service using systemctl
