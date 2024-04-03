@@ -143,4 +143,4 @@ After all is set, we need to restart it
 sudo systemctl restart nginx
 ```
 
-==Good now go to your server address, and it is done==
+Good now go to your server address, and it is done.
