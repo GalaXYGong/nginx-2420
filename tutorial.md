@@ -144,7 +144,7 @@ sudo systemctl restart nginx
 ```
 
 Good now go to your server address, and it is done.
-
+![finished image](image.png)
 # Debugging
 If there are error message showing, we can use `nginx -t` to show the configuration problems.
 Like there is an error message about 
