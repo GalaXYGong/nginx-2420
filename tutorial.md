@@ -130,6 +130,7 @@ http {
 }
 ```
 use `Esc` + `:wq` to save
+
 3. To enable a site, simply create a symlink:
 	If you have different configuration file, just change the configuration file below
 ```bash
