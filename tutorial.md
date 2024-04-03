@@ -135,3 +135,11 @@ use `Esc` + `:wq` to save
 ```bash
 sudo ln -s /etc/nginx/sites-available/another.conf /etc/nginx/sites-enabled/another.conf
 ```
+
+## Restart Ngnix.service
+After all is set, we need to restart it 
+```bash
+sudo systemctl restart nginx
+```
+
+==Good now go to your server address, and it is done==
