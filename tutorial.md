@@ -144,3 +144,11 @@ sudo systemctl restart nginx
 ```
 
 Good now go to your server address, and it is done.
+
+# Debugging
+If there are error message showing, we can use `nginx -t` to show the configuration problems.
+Like there is an error message about 
+```bash
+2024/04/03 17:06:47 [warn] 1450726#1450726: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64;
+```
+You can change the configuration file `types_hash_max_size: 1024` into `types_hash_max_size: 4096` (it is under `http` block) It should be solved.
