@@ -1,154 +1,158 @@
-# Purpose of the Tutorial
-Set up a fresh Arch Linux server running on DigitalOcean to serving the demo document included below.
-# Nginx
-[nginx](https://en.wikipedia.org/wiki/nginx "wikipedia:nginx") (pronounced "engine X"), is a free, open-source, high-performance HTTP [web server](https://wiki.archlinux.org/title/Web_server "Web server") and reverse proxy, as well as an IMAP/POP3 proxy server, written by Igor Sysoev in 2005. nginx is well known for its stability, rich feature set, simple configuration, and low resource consumption.
+# 3P2 Tutorial for Hello-Server
 
-# Steps of setting
-## Install Nginx
-In Arch Linux, we can use this command to install nginx
+# Install and Setting up a UFW Firewall
+## What is UFW (Uncomplicated Firewall)
+
+UFW is a program that makes it a little easier to manage a [netfilter](https://netfilter.org/) firewall. UFW actually manages nftables or iptables, which make use of netfilter which is part of the Linux kernel.
+## Install UFW
 ```bash
-# before we do installation, it is high recommended to refresh and upload the packages
+#  before we start update your pages.
 sudo pacman -Syu
-# install ngnix
-sudo pacman -S nginx
+# next install ufw Firewall
+sudo pacman -S ufw
 ```
-## Install vim editor
-We have to install vim editor to change configuration file and html
+## Enable UFW Service
+We can enable `ufw.services` using `systemctl`
 ```bash
-# install vim
-sudo pacman -S vim
-```
-## Test Nginx 
-We can run a test of Nginx, in the bash, using this command
-```bash
-nginx
-```
-we can set see the page for now
-![image](./Pastedimage20240403085058.png)
-It is running on the default port 80
-
-## Enable nginx service using systemctl
-We have to enable nginx service using systemctl, so it can run automatically every time when we start our droplet
-```bash
-sudo systemctl enable nginx
-# we can check whether it is enabled, using 
-sudo systemctl status nginx
-# if it shows enabled, then it's cool
-```
-## Create our directory for project root
-We can use this path `/web/html/nginx-2420`, or you can create your own as you wish
-Here `mkdir` is the command to make directory.
-`-p` option tells it to create parent directory if necessary.
-We need `sudo` because we are making directory on root directory
-```bash
-sudo mkdir -p /web/html/nginx-2420
+# enable ufw.service with --now to indicate running at the same time.
+sudo systemctl enable --now ufw.service
 ```
 
-## Create our own directory with the content below
-Under the directory of `/web/html/nginx-2420`, we can make our own html file.
-You can name your html file as you wish, here I just use `index.html`
+>[!warning]
+>It is ok to enable *UFW Service*, BUT **DON'T ENABLE firewall** for now!!!
+>Because you haven't set rules, you may lose SSH connection to your Digital Ocean Droplet!
+
+## configuration steps
+We need to make sure our server is safe so we can deny all incoming traffic and then add other rules to allow legitimate traffic to get in.
+The outbound traffic is probably harmless, we just allow all outgoing traffic
 ```bash
-sudo vim /web/html/nginx-2420/index.html
+# deny all incoming traffic, we need to then add some rules allow some traffic to come in.
+sudo ufw default deny incoming
+# allow all outgoing traffic
+sudo ufw default allow outgoing
 ```
-Paste in the content in the following block, or you can paste in/create your own html content.
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2420</title>
-    <style>
-        * {
-            color: #db4b4b;
-            background: #16161e;
-        }
-        body {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-        }
-        h1 {
-            text-align: center;
-            font-family: sans-serif;
-        }
-    </style>
-</head>
-<body>
-    <h1>All your base are belong to us</h1>
-</body>
-</html>
-```
-Press `Esc` and type in `:wq` to save the file.
-## Create a separate server block in another configuration file
-1. Create the `sites-enabled` and `sites-available `directory
+Enable some rules to let necessary traffic in, like ssh from port 22, http from port 80, and https from port 443
 ```bash
-sudo mkdir -p /etc/nginx/sites-enabled
-sudo mkdir -p /etc/nginx/sites-available
+# allow all ssh traffic in
+sudo ufw allow ssh
+# but limit ssh malicious access like Brute Force Attack 6 attempts in 30s.
+ufw limit ssh
+# allow http and https traffic
+sudo ufw allow http
+sudo ufw allow https
 ```
-2. We create another configuration file. You can name your own configuration file
+Check your rules and status
 ```bash
+sudo ufw status verbose 
+```
+You shall see 
+```
+sudo ufw status verbose
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), deny (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+22                         LIMIT IN    Anywhere                  
+80                         ALLOW IN    Anywhere                  
+443                        ALLOW IN    Anywhere                  
+22 (v6)                    LIMIT IN    Anywhere (v6)             
+80 (v6)                    ALLOW IN    Anywhere (v6)             
+443 (v6)                   ALLOW IN    Anywhere (v6)             
+
+
+```
+
+
+# Create new service backend
+Download `hello-server` binary file to you computer
+## Upload backend binary file `hello-server` to your digital ocean droplet using SFTP
+```bash
+# connect through sftp 
+sftp your_droplet
+# using put to send the file to droplet
+put hello-server
+```
+put it into `/usr/sbin` or `/usr/bin` or`/bin` directory
+```bash
+# move it into `/usr/sbin` or `/usr/bin` or`/bin`
+sudo mv /home/your_username/hello-server /usr/bin/hello-server
+# change ownership if necessary
+sudo chown root:root /bin/hello-server
+# make it executable
+sudo chmod ug+x /bin/hello-server
+```
+## Write a service file
+create and edit service file
+```
+sudo vim /etc/systemd/system/backend.service
+```
+add content
+```bash
+[Unit]
+Description=Hello Server
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/your_username/bin/hello-server 
+
+[Install]
+WantedBy=multi-user.target
+```
+## Start your service
+```bash
+sudo systemctl daemon-reload
+sudo systemctl start backend
+```
+# Adjust Nginx
+Since we are going to open a new port to run the backend, so we have to change nginx settings
+remember last time we have our configuration file in `/etc/nginx/sites-enabled/another.conf` (This is what we put our nginx configuration file last time. Yours may be different.)
+```bash
+# edit configruation file
 sudo vim /etc/nginx/sites-enabled/another.conf
 ```
-3. Fill in server block, be careful if you set a different name for your html file, you have to change location part, filling your own name of html.
+
+In the file we need to add two  locations for 1. `/echo`, 2. `/hey`
+In the settings, we need to use reverse proxy to direct `/echo`,`/hey` traffic to `http://127.0.0.1:8080`. 
+
+And then 'proxy_set_header' directives are used to pass headers from the original request, to the proxy server.
 ```bash
 server {
     listen 80;
     listen [::]:80;
-    server_name 24.144.93.244
     root /web/html/nginx-2420;
     location / {
         index index.php index.html index.htm;
     }
+    # here are the new added configuration.
+    location /hey {
+    # Define the reverse proxy settings
+        proxy_pass http://127.0.0.1:8080/hey;
+    }
+    location /echo {
+    # Define the reverse proxy settings
+        proxy_pass http://127.0.0.1:8080/echo;
+    }
+    
 }
-```
-use `Esc` + `:wq` to save
-## Setting up Nginx configuration file
-The default setting file is in `/etc/nginx/nginx.conf`
-```bash
-sudo vim /etc/nginx/nginx.conf
-```
-1. Delete default setting this part, or like me, just comment them out
-```bash
-#server {
-#listen       80;
-#server_name  localhost;
- #charset koi8-r;
-#access_log  logs/host.access.log  main;
-#location / {
-#	 root   /usr/share/nginx/html;
-#	index  index.html index.htm;
-#}
-```
-2. Include the new configuration file, in http part past in `include sites-enabled/*;` like this
-```bash
-http {
-    ...
-    include sites-enabled/*;
-}
-```
-use `Esc` + `:wq` to save
 
-3. To enable a site, simply create a symlink:
-	If you have different configuration file, just change the configuration file below
-```bash
-sudo ln -s /etc/nginx/sites-available/another.conf /etc/nginx/sites-enabled/another.conf
 ```
 
-## Restart Ngnix.service
-After all is set, we need to restart it 
-```bash
-sudo systemctl restart nginx
-```
 
-Good now go to your server address, and it is done.
-![finished image](image.png)
-# Debugging
-If there are error message showing, we can use `nginx -t` to show the configuration problems.
-Like there is an error message about 
-```bash
-2024/04/03 17:06:47 [warn] 1450726#1450726: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64;
+
+# Test backend
 ```
-You can change the configuration file `types_hash_max_size: 1024` into `types_hash_max_size: 4096` (it is under `http` block) It should be solved.
+curl http://24.144.93.244/hey
+```
+[hey](./hey.png)
+```
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"message": "Hello from your server"}' \
+  http://24.144.93.244/echo
+```
+You shall see this. If you use a postman do test.
+[echo](./echo.png)
+# Good Job!
