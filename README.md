@@ -147,12 +147,17 @@ server {
 ```
 curl http://24.144.93.244/hey
 ```
+If you use the command above to test, you shall see.
+![image](./hey_with_command.png)
+If you use your browser to test `/hey` page, you shall see.
 ![image](./hey.png)
 ```
 curl -X POST -H "Content-Type: application/json" \
   -d '{"message": "Hello from your server"}' \
   http://24.144.93.244/echo
 ```
+You shall see this. If you use the command above to test.
+![image](./echo_with_command)
 You shall see this. If you use a postman do test.
 ![image](./echo.png)
 # Good Job!
