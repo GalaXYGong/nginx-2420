@@ -118,7 +118,6 @@ sudo vim /etc/nginx/sites-enabled/another.conf
 In the file we need to add two  locations for 1. `/echo`, 2. `/hey`
 In the settings, we need to use reverse proxy to direct `/echo`,`/hey` traffic to `http://127.0.0.1:8080`. 
 
-And then 'proxy_set_header' directives are used to pass headers from the original request, to the proxy server.
 ```bash
 server {
     listen 80;
